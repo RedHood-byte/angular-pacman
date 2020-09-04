@@ -9,19 +9,21 @@ export enum KEY_CODE {
 
 class Ghost {
   className: string;
+  classNamecopy: string;
   startIndex: number;
   speed: number;
   currentIndex: number;
-  previousIndex: number;
+  nextIndex: number;
   isScared: boolean;
   timerId: number;
 
   constructor(className, startIndex, speed) {
       this.className = className;
+      this.classNamecopy = className;
       this.startIndex = startIndex;
       this.speed = speed;
       this.currentIndex = startIndex;
-      this.previousIndex = startIndex;
+      this.nextIndex = startIndex;
       this.isScared = false
       this.timerId = NaN
   }
@@ -90,6 +92,12 @@ export class AppComponent implements OnInit{
   
   @HostListener('document:keyup', ['$event'])
   KeyUpEvent(event: KeyboardEvent) {
+    this.ghosts.forEach(ghost =>{
+      //this.squares[ghost.currentIndex].classList.add('ghost');
+      //this.squares[ghost.currentIndex].classList.add(ghost.className);
+      this.moveGhost(ghost);
+      this.moveGhost(ghost);
+    });
     this.renderer.removeClass(this.squares[this.pacmanCurrentIndex], 'pac-man');
     if (event.keyCode === KEY_CODE.RIGHT_ARROW) {
       if(
@@ -172,17 +180,70 @@ export class AppComponent implements OnInit{
       this.squares[ghost.currentIndex].classList.add(ghost.className);
       this.moveGhost(ghost);
     });
-
+  
   }
 
   moveGhost(ghost) {
     // please implement this.
+    let randomNo = function(start,range){
+      let ran = Math.floor((Math.random()*range)+start);
+      while(ran>range){
+        let ran = Math.floor((Math.random()*range)+start);
+      }
+      return ran;
+    }
+      let rand = randomNo(1,4);
+      this.renderer.removeClass(this.squares[ghost.startIndex], ghost.className);
+      this.renderer.removeClass(this.squares[ghost.currentIndex], ghost.className);
+      if (rand === 1) {
+        if(
+            ghost.currentIndex - this.width >= 0 &&
+            !this.squares[ghost.currentIndex + 1].classList.contains('wall')
+        )
+        ghost.nextIndex += 1
+        if ( this.squares[ghost.currentIndex +1] === this.squares[392]) {
+          ghost.nextIndex= 364
+        }
+      }
+  
+      if (rand === 2) {
+        if(
+          ghost.currentIndex % this.width !== 0 &&
+          !this.squares[ghost.currentIndex - 1].classList.contains('wall')
+        )
+        ghost.nextIndex -= 1
+        if ( this.squares[ghost.currentIndex -1] === this.squares[363]){
+          ghost.nextIndex = 391
+        }
+      }
+  
+      if (rand === 3) {
+        if ( 
+          ghost.currentIndex + this.width < this.width * this.width &&
+            !this.squares[ghost.currentIndex + this.width].classList.contains('wall') 
+        )
+        ghost.nextIndex += this.width
+      }
+  
+      if (rand === 4) {
+       
+        if(
+          ghost.currentIndex - this.width >= 0 &&
+          !this.squares[ghost.currentIndex - this.width].classList.contains('wall')
+        )
+        ghost.nextIndex -= this.width
+      }
+      this.renderer.addClass(this.squares[ghost.nextIndex], ghost.className);
+      ghost.currentIndex = ghost.nextIndex; 
   }
 
   checkForGameOver(squaresX, pacmanCurrentIndexX) {
-      if (squaresX[pacmanCurrentIndexX].classList.contains('ghost') &&
-          !squaresX[pacmanCurrentIndexX].classList.contains('scared-ghost')
-      ) {
+      if (squaresX[pacmanCurrentIndexX].classList.contains('ghost')||
+      squaresX[pacmanCurrentIndexX].classList.contains('blinky')||
+      squaresX[pacmanCurrentIndexX].classList.contains('pinky')||
+      squaresX[pacmanCurrentIndexX].classList.contains('inky')||
+      squaresX[pacmanCurrentIndexX].classList.contains('clyde')
+      ){
         this.ghosts.forEach(ghost=> clearInterval(ghost.timerId))
         this.KeyUpEvent = function() : void {};
         this.result.nativeElement.innerHTML = "Game Over!";
@@ -214,19 +275,35 @@ export class AppComponent implements OnInit{
   }
 
   powerPelletEaten() {
-      if( this.squares[this.pacmanCurrentIndex].classList.contains('power-pellet')) {
-          this.scoreValue+=10
-          this.score.nativeElement.innerHTML = this.scoreValue;
-          this.ghosts.forEach(ghost => ghost.isScared = true)
-          setTimeout(()=>{
-            this.ghosts.forEach(ghost => {
-                ghost.isScared = false
-                this.squares[ghost.currentIndex].classList.remove(ghost.className, 'ghost', 'scared-ghost')
-                ghost.currentIndex = ghost.startIndex
-                this.squares[ghost.currentIndex].classList.add(ghost.className, 'ghost')
-            })
-          }, 10000)
-          this.squares[this.pacmanCurrentIndex].classList.remove('power-pellet');
-      }
-  }
+    if( this.squares[this.pacmanCurrentIndex].classList.contains('power-pellet')) {
+        this.scoreValue+=10
+        this.score.nativeElement.innerHTML = this.scoreValue;
+        this.ghosts.forEach(ghost => {
+          ghost.isScared = true
+          this.renderer.removeClass(this.squares[ghost.currentIndex], ghost.className);
+          ghost.className = 'scared-ghost'
+          this.renderer.addClass(this.squares[ghost.nextIndex], ghost.className);
+          //this.moveGhost(ghost)
+        })
+        // this.ghosts.forEach(ghost => {
+          
+        //   // this.squares[ghost.currentIndex].classList.remove(ghost.className, 'ghost', 'scared-ghost')
+        //   //     //ghost.currentIndex = ghost.startIndex
+        //   //     this.squares[ghost.nextIndex].classList.add(ghost.className, 'scared-ghost')
+         
+        // })
+        setTimeout(()=>{
+          this.ghosts.forEach(ghost => {
+              ghost.isScared = false
+              this.renderer.removeClass(this.squares[ghost.currentIndex], ghost.className);
+              ghost.className = ghost.classNamecopy
+              this.renderer.addClass(this.squares[ghost.nextIndex], ghost.className);
+             // this.squares[ghost.currentIndex].classList.remove(ghost.className, 'ghost', 'scared-ghost')
+              //ghost.currentIndex = ghost.startIndex
+             // this.squares[ghost.nextIndex].classList.add(ghost.className, 'ghost')
+          })
+        }, 10000)
+        this.squares[this.pacmanCurrentIndex].classList.remove('power-pellet');
+    }
+}
 }

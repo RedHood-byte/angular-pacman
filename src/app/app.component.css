@@ -54,4 +54,5 @@
   
 .scared-ghost {
     background-color: aquamarine;
+    box-sizing: border-box;
 }
